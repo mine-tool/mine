@@ -1,6 +1,8 @@
 use clap::{Parser, Subcommand};
-use spinners::{Spinner, Spinners};
+use indicatif::{ProgressBar, ProgressStyle};
 use std::error::Error;
+use std::path::Path;
+use std::time::Duration;
 
 pub mod server {
     pub mod vanilla {
@@ -13,6 +15,8 @@ pub mod server {
         pub mod fabric;
     }
 }
+
+pub mod downloader;
 
 /// Simple program to initialize a Minecraft server
 #[derive(Parser, Debug)]
@@ -77,46 +81,46 @@ enum ServerCommand {
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
+    let pb = ProgressBar::new_spinner();
+    pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap());
+    pb.set_message("Working...");
+    pb.enable_steady_tick(Duration::from_nanos(100));
+
+
     match args.command {
         Command::Init { server } => {
             let download_link = match server {
                 ServerCommand::Vanilla { version, snapshot } => {
-                    let mut spinner = Spinner::new(Spinners::Dots3, "Loading...".into());
                     let link = server::vanilla::vanilla::get_download_link(Some(version), snapshot).await;
-                    spinner.stop();
                     match link {
                         Ok(link) => link,
                         Err(e) => {
-                            String::from(format!("\rError: {}", e.to_string()))
+                            String::from(format!("Error: {}", e.to_string()))
                         },
                     }
                 },
                 ServerCommand::Paper { version, build } => {
-                    let mut spinner = Spinner::new(Spinners::Dots3, "Loading...".into());
                     let link = server::paper::paper::get_download_link(Some(version), build).await;
-                    spinner.stop();
                     match link {
                         Ok(link) => link,
                         Err(e) => {
-                            String::from(format!("\rError: {}", e.to_string()))
+                            String::from(format!("Error: {}", e.to_string()))
                         },
                     }
                 },
                 ServerCommand::Fabric { version, loader_version, installer_version, unstable_loader, unstable_installer } => {
-                    let mut spinner = Spinner::new(Spinners::Dots3, "Loading...".into());
                     let link = server::fabric::fabric::get_download_link(Some(version), Some(loader_version), Some(installer_version), unstable_loader, unstable_installer).await;
-                    spinner.stop();
                     match link {
                         Ok(link) => link,
                         Err(e) => {
-                            String::from(format!("\rError: {}", e.to_string()))
+                            String::from(format!("Error: {}", e.to_string()))
                         },
                     }
                 },
             };
 
-            // Prints the download link, overwriting the spinner
-            println!("\r{}", download_link);
+            pb.finish_and_clear();
+            downloader::download_file(&download_link, Path::new("server.jar")).await?;
         },
     }
 
