@@ -1,0 +1,13 @@
+[package]
+name = "mine"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { version = "1.0.204", features = ["derive"] }
+clap = { version = "4.5.13", features = ["derive"] }
+tokio = { version = "1.39.2", features = ["full"] }
+serde_json = "1.0.122"
+reqwest = { version = "0.12.5", features = ["json"] }
+spinners = { git = "https://github.com/FGRibreau/spinners", version = "4.1.0" }
+semver = "1.0.23"
