@@ -116,8 +116,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
             }
 
             let download_link = match server {
-                ServerCommand::Vanilla { version, snapshot, .. } => {
-                    let link = server::vanilla::vanilla::get_download_link(Some(version), snapshot).await;
+                ServerCommand::Vanilla { ref version, snapshot, .. } => {
+                    let link = server::vanilla::vanilla::get_download_link(Some(version.clone()), snapshot).await;
                     match link {
                         Ok(link) => link,
                         Err(e) => {
@@ -125,8 +125,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         },
                     }
                 },
-                ServerCommand::Paper { version, build, .. } => {
-                    let link = server::paper::paper::get_download_link(Some(version), build).await;
+                ServerCommand::Paper { ref version, build, .. } => {
+                    let link = server::paper::paper::get_download_link(Some(version.clone()), build).await;
                     match link {
                         Ok(link) => link,
                         Err(e) => {
@@ -134,8 +134,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         },
                     }
                 },
-                ServerCommand::Fabric { version, loader, installer, unstable_loader, unstable_installer, .. } => {
-                    let link = server::fabric::fabric::get_download_link(Some(version), Some(loader), Some(installer), unstable_loader, unstable_installer).await;
+                ServerCommand::Fabric { ref version, ref loader, ref installer, unstable_loader, unstable_installer, .. } => {
+                    let link = server::fabric::fabric::get_download_link(Some(version.clone()), Some(loader.clone()), Some(installer.clone()), unstable_loader, unstable_installer).await;
                     match link {
                         Ok(link) => link,
                         Err(e) => {
@@ -173,6 +173,23 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
             while let Some(downloaded) = progress_rx.recv().await {
                 pb.set_position(downloaded);
+            }
+
+            pb.finish_and_clear();
+
+            match server {
+                ServerCommand::Vanilla { version, .. } => {
+                    let version_msg = if version.is_empty() { "latest" } else { &version };
+                    println!("\x1b[32mSuccessfully initialized Vanilla server for version {}!\x1b[0m", version_msg);
+                },
+                ServerCommand::Paper { version, .. } => {
+                    let version_msg = if version.is_empty() { "latest" } else { &version };
+                    println!("\x1b[32mSuccessfully initialized Paper server for version {}!\x1b[0m", version_msg);
+                },
+                ServerCommand::Fabric { version, .. } => {
+                    let version_msg = if version.is_empty() { "latest" } else { &version };
+                    println!("\x1b[32mSuccessfully initialized Fabric server for version {}!\x1b[0m", version_msg);
+                },
             }
         },
     }
