@@ -53,7 +53,7 @@ async fn get_latest_installer_version(unstable: bool) -> Result<String, Box<dyn 
     Ok(latest_installer_version.version.clone())
 }
 
-pub async fn get_download_link(version: Option<String>, loader_version: Option<String>, installer_version: Option<String>, unstable_loader: bool, unstable_installer: bool) -> Result<String, Box<dyn std::error::Error>> {
+pub async fn get_download_link(version: Option<String>, loader_version: Option<String>, installer_version: Option<String>, unstable_loader: bool, unstable_installer: bool) -> Result<(String, String), Box<dyn std::error::Error>> {
     let latest_minecraft_version = get_latest_minecraft_version().await?;
     let latest_loader_version = get_latest_loader_version(unstable_loader).await?;
     let latest_installer_version = get_latest_installer_version(unstable_installer).await?;
@@ -83,6 +83,7 @@ pub async fn get_download_link(version: Option<String>, loader_version: Option<S
         return Err(format!("Installer version {} not found. Latest is {}", installer_version.clone().unwrap(), latest_installer_version).into());
     }
 
-    let url = format!("https://meta.fabricmc.net/v2/versions/loader/{}/{}/{}/server/jar", version.unwrap(), loader_version.unwrap(), installer_version.unwrap());
-    Ok(url)
+    let url = format!("https://meta.fabricmc.net/v2/versions/loader/{}/{}/{}/server/jar", version.clone().unwrap(), loader_version.clone().unwrap(), installer_version.clone().unwrap());
+    let version_info = format!("(Version: {}, Loader: {}, Installer: {})", version.unwrap(), loader_version.unwrap(), installer_version.unwrap());
+    Ok((url, version_info))
 }

@@ -55,7 +55,7 @@ async fn get_build(version: String, build: u32) -> Result<PaperBuild, Box<dyn st
     Ok(paper_build)
 }
 
-pub async fn get_download_link(version: Option<String>, build: Option<u32>) -> Result<String, Box<dyn std::error::Error>> {
+pub async fn get_download_link(version: Option<String>, build: Option<u32>) -> Result<(String, String), Box<dyn std::error::Error>> {
     let latest_version = get_latest_version().await?;
     let latest_build = get_latest_build(latest_version.clone()).await?;
 
@@ -79,5 +79,8 @@ pub async fn get_download_link(version: Option<String>, build: Option<u32>) -> R
 
     let paper_build = get_build(version.clone(), build).await?;
 
-    Ok(format!("{}/versions/{}/builds/{}/downloads/{}", PAPER_MANIFEST_URL, version, build, paper_build.downloads.application.name))
+    Ok((
+        format!("{}/versions/{}/builds/{}/downloads/{}", PAPER_MANIFEST_URL, version, build, paper_build.downloads.application.name),
+        format!("Version: {}, Build: {:?}", version, build)
+    ))
 }

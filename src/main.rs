@@ -45,6 +45,7 @@ enum ServerCommand {
         #[arg(default_value = "")]
         version: String,
 
+        /// Use the latest snapshot version
         #[arg(long)]
         snapshot: bool,
 
@@ -92,6 +93,17 @@ enum ServerCommand {
     },
 }
 
+// convert ServerType to string impl
+impl ServerCommand {
+    fn to_string(&self) -> String {
+        match self {
+            ServerCommand::Vanilla { .. } => "Vanilla".to_string(),
+            ServerCommand::Paper { .. } => "Paper".to_string(),
+            ServerCommand::Fabric { .. } => "Fabric".to_string(),
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
@@ -114,30 +126,39 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     eprintln!("Error generating EULA: {}", e);
                 }
             }
-
+            let mut version_info = String::new();
             let download_link = match server {
                 ServerCommand::Vanilla { ref version, snapshot, .. } => {
-                    let link = server::vanilla::vanilla::get_download_link(Some(version.clone()), snapshot).await;
-                    match link {
-                        Ok(link) => link,
+                    let result = server::vanilla::vanilla::get_download_link(Some(version.clone()), snapshot).await;
+                    match result {
+                        Ok((link, ver_info)) => {
+                            version_info = ver_info;
+                            link
+                        },
                         Err(e) => {
                             String::from(format!("Error: {}", e.to_string()))
                         },
                     }
                 },
                 ServerCommand::Paper { ref version, build, .. } => {
-                    let link = server::paper::paper::get_download_link(Some(version.clone()), build).await;
-                    match link {
-                        Ok(link) => link,
+                    let result = server::paper::paper::get_download_link(Some(version.clone()), build).await;
+                    match result {
+                        Ok((link, ver_info)) => {
+                            version_info = ver_info;
+                            link
+                        },
                         Err(e) => {
                             String::from(format!("Error: {}", e.to_string()))
                         },
                     }
                 },
                 ServerCommand::Fabric { ref version, ref loader, ref installer, unstable_loader, unstable_installer, .. } => {
-                    let link = server::fabric::fabric::get_download_link(Some(version.clone()), Some(loader.clone()), Some(installer.clone()), unstable_loader, unstable_installer).await;
-                    match link {
-                        Ok(link) => link,
+                    let result = server::fabric::fabric::get_download_link(Some(version.clone()), Some(loader.clone()), Some(installer.clone()), unstable_loader, unstable_installer).await;
+                    match result {
+                        Ok((link, ver_info)) => {
+                            version_info = ver_info;
+                            link
+                        },
                         Err(e) => {
                             String::from(format!("Error: {}", e.to_string()))
                         },
@@ -177,20 +198,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
             pb.finish_and_clear();
 
-            match server {
-                ServerCommand::Vanilla { version, .. } => {
-                    let version_msg = if version.is_empty() { "latest" } else { &version };
-                    println!("\x1b[32mSuccessfully initialized Vanilla server for version {}!\x1b[0m", version_msg);
-                },
-                ServerCommand::Paper { version, .. } => {
-                    let version_msg = if version.is_empty() { "latest" } else { &version };
-                    println!("\x1b[32mSuccessfully initialized Paper server for version {}!\x1b[0m", version_msg);
-                },
-                ServerCommand::Fabric { version, .. } => {
-                    let version_msg = if version.is_empty() { "latest" } else { &version };
-                    println!("\x1b[32mSuccessfully initialized Fabric server for version {}!\x1b[0m", version_msg);
-                },
-            }
+            println!("\x1b[32mSuccessfully initialized {} {} server!\x1b[0m", server.to_string(), version_info);
         },
     }
 

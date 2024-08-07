@@ -60,7 +60,7 @@ async fn get_latest_version(snapshot: bool) -> Result<String, Box<dyn std::error
     Ok(if snapshot { manifest.latest.snapshot } else { manifest.latest.release })
 }
 
-pub async fn get_download_link(version: Option<String>, snapshot: bool) -> Result<String, Box<dyn std::error::Error>> {
+pub async fn get_download_link(version: Option<String>, snapshot: bool) -> Result<(String, String), Box<dyn std::error::Error>> {
     let latest_stable_version = get_latest_version(false).await?;
     let latest_snapshot_version = get_latest_version(true).await?;
 
@@ -74,8 +74,11 @@ pub async fn get_download_link(version: Option<String>, snapshot: bool) -> Resul
 
     for ver in manifest.versions {
         if ver.id == version_id {
-            let version_artifact = get_artifact(ver.id).await?;
-            return Ok(version_artifact.downloads.server.url);
+            let version_artifact = get_artifact(ver.id.clone()).await?;
+            return Ok((
+                version_artifact.downloads.server.url,
+                format!("({})", ver.id),
+            ));
         }
     }
 
