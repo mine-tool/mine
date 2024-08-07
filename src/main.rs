@@ -19,6 +19,7 @@ pub mod server {
 }
 
 pub mod downloader;
+pub mod eula; // an EULA file generator
 
 /// Simple program to initialize a Minecraft server
 #[derive(Parser, Debug)]
@@ -46,6 +47,10 @@ enum ServerCommand {
 
         #[arg(long)]
         snapshot: bool,
+
+        /// Accept the Mojang EULA
+        #[arg(long)]
+        eula: bool,
     },
     Paper {
         /// Minecraft version to use
@@ -55,6 +60,10 @@ enum ServerCommand {
         /// Build number
         #[arg(long, default_value = None)]
         build: Option<u32>,
+
+        /// Accept the Mojang EULA
+        #[arg(long)]
+        eula: bool,
     },
     Fabric {
         /// Minecraft version to use
@@ -76,6 +85,10 @@ enum ServerCommand {
         /// Use unstable installer version
         #[arg(long)]
         unstable_installer: bool,
+
+        /// Accept the Mojang EULA
+        #[arg(long)]
+        eula: bool,
     },
 }
 
@@ -88,11 +101,22 @@ async fn main() -> Result<(), Box<dyn Error>> {
     pb.set_message("Working...");
     pb.enable_steady_tick(Duration::from_millis(100));
 
-
     match args.command {
         Command::Init { server } => {
+            let eula_accepted = match server {
+                ServerCommand::Vanilla { eula, .. } => eula,
+                ServerCommand::Paper { eula, .. } => eula,
+                ServerCommand::Fabric { eula, .. } => eula,
+            };
+
+            if eula_accepted {
+                if let Err(e) = eula::generate_eula() { // pre-generate the EULA file that accepts the Mojang EULA
+                    eprintln!("Error generating EULA: {}", e);
+                }
+            }
+
             let download_link = match server {
-                ServerCommand::Vanilla { version, snapshot } => {
+                ServerCommand::Vanilla { version, snapshot, .. } => {
                     let link = server::vanilla::vanilla::get_download_link(Some(version), snapshot).await;
                     match link {
                         Ok(link) => link,
@@ -101,7 +125,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         },
                     }
                 },
-                ServerCommand::Paper { version, build } => {
+                ServerCommand::Paper { version, build, .. } => {
                     let link = server::paper::paper::get_download_link(Some(version), build).await;
                     match link {
                         Ok(link) => link,
@@ -110,7 +134,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         },
                     }
                 },
-                ServerCommand::Fabric { version, loader, installer, unstable_loader, unstable_installer } => {
+                ServerCommand::Fabric { version, loader, installer, unstable_loader, unstable_installer, .. } => {
                     let link = server::fabric::fabric::get_download_link(Some(version), Some(loader), Some(installer), unstable_loader, unstable_installer).await;
                     match link {
                         Ok(link) => link,
