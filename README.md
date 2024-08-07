@@ -4,8 +4,6 @@
 It's a work in progress, but it can already be used to download Vanilla, Paper and Fabric server jars.
 (yes it's not reproducible yet)
 
----
-
 ## Installation
 To install, just run:
 
@@ -14,8 +12,6 @@ cargo install --git https://github.com/mine-tool/mine
 ```
 
 After this, you can run `mine` in your terminal.
-
----
 
 ## Usage
 
@@ -34,6 +30,8 @@ You can also specify a version, including snapshots:
 mine init vanilla 1.21
 ```
 
+---
+
 ### Paper
 
 To download a Paper server jar, run:
@@ -49,6 +47,8 @@ Paper also has build numbers, which you can specify:
 ```bash
 mine init paper 1.21 --build 123
 ```
+
+---
 
 ### Fabric
 
@@ -77,8 +77,6 @@ Same goes for the installer:
 ```bash
 mine init fabric --unstable-installer
 ```
-
----
 
 ## License
 This project is licensed under the GPLv3 license.
