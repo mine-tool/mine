@@ -63,11 +63,11 @@ enum ServerCommand {
 
         /// Loader version
         #[arg(long, default_value = "")]
-        loader_version: String,
+        loader: String,
 
         /// Installer version
         #[arg(long, default_value = "")]
-        installer_version: String,
+        installer: String,
 
         /// Use unstable loader version
         #[arg(long)]
@@ -110,8 +110,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         },
                     }
                 },
-                ServerCommand::Fabric { version, loader_version, installer_version, unstable_loader, unstable_installer } => {
-                    let link = server::fabric::fabric::get_download_link(Some(version), Some(loader_version), Some(installer_version), unstable_loader, unstable_installer).await;
+                ServerCommand::Fabric { version, loader, installer, unstable_loader, unstable_installer } => {
+                    let link = server::fabric::fabric::get_download_link(Some(version), Some(loader), Some(installer), unstable_loader, unstable_installer).await;
                     match link {
                         Ok(link) => link,
                         Err(e) => {
