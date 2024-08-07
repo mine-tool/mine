@@ -1,8 +1,10 @@
 use clap::{Parser, Subcommand};
-use indicatif::{ProgressBar, ProgressStyle};
+use indicatif::{ProgressBar, ProgressStyle, ProgressState};
+use tokio::sync::mpsc;
 use std::error::Error;
 use std::path::Path;
 use std::time::Duration;
+use std::fmt::Write;
 
 pub mod server {
     pub mod vanilla {
@@ -84,7 +86,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let pb = ProgressBar::new_spinner();
     pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap());
     pb.set_message("Working...");
-    pb.enable_steady_tick(Duration::from_nanos(100));
+    pb.enable_steady_tick(Duration::from_millis(100));
 
 
     match args.command {
@@ -120,7 +122,34 @@ async fn main() -> Result<(), Box<dyn Error>> {
             };
 
             pb.finish_and_clear();
-            downloader::download_file(&download_link, Path::new("server.jar")).await?;
+
+            let (progress_tx, mut progress_rx) = mpsc::channel(100);
+            let (length_tx, mut length_rx) = mpsc::channel(1);
+
+            tokio::spawn(async move {
+                if let Err(e) = downloader::download_file(&download_link, Path::new("server.jar"), progress_tx, length_tx).await {
+                    eprintln!("Download error: {}", e);
+                }
+            });
+
+            let total_bytes = length_rx.recv().await.unwrap();
+
+            let pb = ProgressBar::new(total_bytes.unwrap_or(0));
+            pb.set_style(
+                ProgressStyle::with_template(
+                    "{spinner:.green} {msg} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})"
+                )?
+                .with_key("eta", |state: &ProgressState, w: &mut dyn Write| {
+                    write!(w, "{:.1}s", state.eta().as_secs_f64()).unwrap()
+                })
+                .progress_chars("#>-"),
+            );
+            pb.set_message("Downloading...");
+            pb.enable_steady_tick(Duration::from_millis(100));
+
+            while let Some(downloaded) = progress_rx.recv().await {
+                pb.set_position(downloaded);
+            }
         },
     }
 
