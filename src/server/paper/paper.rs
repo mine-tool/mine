@@ -1,6 +1,8 @@
 use reqwest::get;
 use serde::Deserialize;
 
+use crate::version::Version;
+
 const PAPER_MANIFEST_URL: &str = "https://api.papermc.io/v2/projects/paper";
 
 // https://api.papermc.io/v2/projects/paper
@@ -69,7 +71,7 @@ pub async fn get_download_link(version: Option<String>, build: Option<u32>) -> R
         None => latest_build,
     };
 
-    if version > latest_version {
+    if Version::from_str(version.as_str()) > Version::from_str(latest_version.as_str()) {
         return Err(format!("Version {} not found. Latest is {}", version, latest_version).into());
     }
 
@@ -81,6 +83,6 @@ pub async fn get_download_link(version: Option<String>, build: Option<u32>) -> R
 
     Ok((
         format!("{}/versions/{}/builds/{}/downloads/{}", PAPER_MANIFEST_URL, version, build, paper_build.downloads.application.name),
-        format!("Version: {}, Build: {:?}", version, build)
+        format!("(Version: {}, Build: {:?})", version, build)
     ))
 }

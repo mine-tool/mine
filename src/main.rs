@@ -20,6 +20,7 @@ pub mod server {
 
 pub mod downloader;
 pub mod eula; // an EULA file generator
+pub mod version; // a version parser
 
 /// Simple program to initialize a Minecraft server
 #[derive(Parser, Debug)]
@@ -122,11 +123,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
             };
 
             if eula_accepted {
-                if let Err(e) = eula::generate_eula() { // pre-generate the EULA file that accepts the Mojang EULA
+                if let Err(e) = eula::generate_eula() {
                     eprintln!("Error generating EULA: {}", e);
                 }
             }
-            let mut version_info = String::new();
+
+            let version_info;
             let download_link = match server {
                 ServerCommand::Vanilla { ref version, snapshot, .. } => {
                     let result = server::vanilla::vanilla::get_download_link(Some(version.clone()), snapshot).await;
@@ -136,7 +138,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
                             link
                         },
                         Err(e) => {
-                            String::from(format!("Error: {}", e.to_string()))
+                            eprintln!("Error: {}", e);
+                            return Err(e.into());
                         },
                     }
                 },
@@ -148,7 +151,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
                             link
                         },
                         Err(e) => {
-                            String::from(format!("Error: {}", e.to_string()))
+                            eprintln!("Error: {}", e);
+                            return Err(e.into());
                         },
                     }
                 },
@@ -160,7 +164,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
                             link
                         },
                         Err(e) => {
-                            String::from(format!("Error: {}", e.to_string()))
+                            eprintln!("Error: {}", e);
+                            return Err(e.into());
                         },
                     }
                 },
@@ -173,22 +178,33 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
             tokio::spawn(async move {
                 if let Err(e) = downloader::download_file(&download_link, Path::new("server.jar"), progress_tx, length_tx).await {
-                    eprintln!("Download error: {}", e);
+                    eprintln!("\x1b[31mDownload error: {}\x1b[0m", e);
                 }
             });
 
-            let total_bytes = length_rx.recv().await.unwrap();
+            let total_bytes = match length_rx.recv().await {
+                Some(Some(bytes)) => bytes,
+                Some(None) | None => 0,
+            };
 
-            let pb = ProgressBar::new(total_bytes.unwrap_or(0));
-            pb.set_style(
-                ProgressStyle::with_template(
-                    "{spinner:.green} {msg} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})"
-                )?
-                .with_key("eta", |state: &ProgressState, w: &mut dyn Write| {
-                    write!(w, "{:.1}s", state.eta().as_secs_f64()).unwrap()
-                })
-                .progress_chars("#>-"),
-            );
+            let pb = if total_bytes > 0 {
+                // Progress bar for known content length
+                ProgressBar::new(total_bytes).with_style(
+                    ProgressStyle::with_template(
+                        "{spinner:.green} {msg} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})"
+                    )?
+                    .with_key("eta", |state: &ProgressState, w: &mut dyn Write| {
+                        write!(w, "{:.1}s", state.eta().as_secs_f64()).unwrap()
+                    })
+                    .progress_chars("#>-")
+                )
+            } else {
+                // Spinner for unknown content length
+                ProgressBar::new_spinner().with_style(
+                    ProgressStyle::with_template("{spinner:.green} {msg}").unwrap()
+                )
+            };
+
             pb.set_message("Downloading...");
             pb.enable_steady_tick(Duration::from_millis(100));
 

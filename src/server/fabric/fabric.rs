@@ -1,6 +1,7 @@
 use reqwest::get;
 use serde::Deserialize;
 use serde_json;
+use crate::version::Version;
 
 const FABRIC_MANIFEST_URL: &str = "https://meta.fabricmc.net/v2/versions";
 
@@ -71,15 +72,15 @@ pub async fn get_download_link(version: Option<String>, loader_version: Option<S
         _ => Some(latest_installer_version.clone())
     };
 
-    if version.clone().unwrap() > latest_minecraft_version {
+    if Version::from_str(version.clone().unwrap().as_str()) > Version::from_str(latest_minecraft_version.as_str()) {
         return Err(format!("Minecraft version {} not found. Latest is {}", version.clone().unwrap(), latest_minecraft_version).into());
     }
 
-    if loader_version.clone().unwrap() > latest_loader_version {
+    if Version::from_str(loader_version.clone().unwrap().as_str()) > Version::from_str(latest_loader_version.as_str()) {
         return Err(format!("Loader version {} not found. Latest is {}", loader_version.clone().unwrap(), latest_loader_version).into());
     }
 
-    if installer_version.clone().unwrap() > latest_installer_version {
+    if Version::from_str(installer_version.clone().unwrap().as_str()) > Version::from_str(latest_installer_version.as_str()) {
         return Err(format!("Installer version {} not found. Latest is {}", installer_version.clone().unwrap(), latest_installer_version).into());
     }
 
