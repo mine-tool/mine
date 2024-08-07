@@ -1,5 +1,3 @@
-// Fabric installer URL fetcher
-
 use reqwest::get;
 use serde::Deserialize;
 use serde_json;
@@ -56,7 +54,6 @@ async fn get_latest_installer_version(unstable: bool) -> Result<String, Box<dyn 
 }
 
 pub async fn get_download_link(version: Option<String>, loader_version: Option<String>, installer_version: Option<String>, unstable_loader: bool, unstable_installer: bool) -> Result<String, Box<dyn std::error::Error>> {
-    // we fetch latest versions regardless of the input, to check if the user input is valid
     let latest_minecraft_version = get_latest_minecraft_version().await?;
     let latest_loader_version = get_latest_loader_version(unstable_loader).await?;
     let latest_installer_version = get_latest_installer_version(unstable_installer).await?;
@@ -74,8 +71,6 @@ pub async fn get_download_link(version: Option<String>, loader_version: Option<S
         _ => Some(latest_installer_version.clone())
     };
 
-    // check if the user input version isn't bigger than the latest version
-    // we compare versions as strings since semver does not support Minecraft versioning scheme
     if version.clone().unwrap() > latest_minecraft_version {
         return Err(format!("Minecraft version {} not found. Latest is {}", version.clone().unwrap(), latest_minecraft_version).into());
     }

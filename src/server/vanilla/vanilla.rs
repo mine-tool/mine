@@ -79,7 +79,6 @@ pub async fn get_download_link(version: Option<String>, snapshot: bool) -> Resul
         }
     }
 
-    // Err("Version not found".into())
     let latest_minecraft_version = if snapshot { latest_snapshot_version } else { latest_stable_version };
     return Err(format!("Minecraft version {} not found. Latest is {}", version_id, latest_minecraft_version).into());
 }
