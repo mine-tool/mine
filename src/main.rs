@@ -18,6 +18,10 @@ pub mod server {
     }
 }
 
+pub mod plugins {
+    pub mod plugins;
+}
+
 pub mod downloader;
 pub mod eula; // an EULA file generator
 pub mod version; // a version parser
@@ -33,9 +37,15 @@ struct Args {
 
 #[derive(Subcommand, Debug)]
 enum Command {
+    /// Initialize a new Minecraft server (download server.jar)
     Init {
         #[clap(subcommand)]
         server: ServerCommand,
+    },
+    /// Plugin management
+    Plugin {
+        #[clap(subcommand)]
+        plugin: PluginCommand,
     },
 }
 
@@ -94,6 +104,15 @@ enum ServerCommand {
     },
 }
 
+#[derive(Subcommand, Debug)]
+enum PluginCommand{
+    Install {
+        /// Plugin name
+        #[arg(default_value = "")]
+        name: String,
+    },
+}
+
 // convert ServerType to string impl
 impl ServerCommand {
     fn to_string(&self) -> String {
@@ -108,15 +127,15 @@ impl ServerCommand {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
-
     let pb = ProgressBar::new_spinner();
-    pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap());
-    pb.set_message("Working...");
-    pb.enable_steady_tick(Duration::from_millis(100));
-
+    
     match args.command {
         Command::Init { server } => {
             println!("\x1b[33mHint: use --help to see available options!\x1b[0m");
+            
+            pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap());
+            pb.enable_steady_tick(Duration::from_millis(100));
+            pb.set_message("Working...");
             
             let eula_accepted = match server {
                 ServerCommand::Vanilla { eula, .. } => eula,
@@ -217,6 +236,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
             pb.finish_and_clear();
 
             println!("\x1b[32mSuccessfully initialized {} {} server!\x1b[0m", server.to_string(), version_info);
+        },
+        Command::Plugin { plugin } => {
+            match plugin {
+                PluginCommand::Install { name } => {
+                    let plugin = plugins::plugins::search_plugin(name.to_string()).await?;
+                    println!("Plugin: {}", plugin.title);
+                    println!("Description: {}", plugin.description);
+                    println!("Downloads: {}", plugin.downloads);
+                },
+            }
         },
     }
 
