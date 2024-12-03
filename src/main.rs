@@ -116,6 +116,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     match args.command {
         Command::Init { server } => {
+            println!("\x1b[33mHint: use --help to see available options!\x1b[0m");
+            
             let eula_accepted = match server {
                 ServerCommand::Vanilla { eula, .. } => eula,
                 ServerCommand::Paper { eula, .. } => eula,
